@@ -3,6 +3,7 @@ import WaveSurfer from "wavesurfer.js";
 import segments from "./segments";
 import "./App.css";
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
+import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 
 function VideoSegmentPlayer({ hideUpload }) {
   const videoRef = useRef(null);
@@ -42,6 +43,7 @@ function VideoSegmentPlayer({ hideUpload }) {
   useEffect(() => {
     if (audioUrl && !wavesurferRef.current) {
       const regionsPlugin = RegionsPlugin.create();
+      const timelinePlugin = TimelinePlugin.create();
       
       wavesurferRef.current = WaveSurfer.create({
         container: "#waveform",
@@ -50,7 +52,10 @@ function VideoSegmentPlayer({ hideUpload }) {
         height: 80,
         responsive: true,
         backend: "WebAudio",
-        plugins: [regionsPlugin],
+        plugins: [regionsPlugin, timelinePlugin],
+        timeline: {
+          container: "#timeline"
+        }
       });
 
       wavesurferRef.current.load(audioUrl);
@@ -181,6 +186,14 @@ function VideoSegmentPlayer({ hideUpload }) {
 
   return (
     <div className="vsp-bg">
+      {waveLoading && (
+        <div className="vsp-loading-overlay">
+          <div>
+            <div className="vsp-spinner"></div>
+            Cargando onda de audio...
+          </div>
+        </div>
+      )}
       {!hideUpload && (
         <label className="vsp-upload-label">
           <input
@@ -200,26 +213,8 @@ function VideoSegmentPlayer({ hideUpload }) {
             className="vsp-video"
             controls
           />
-          <div style={{ position: 'relative' }}>
-            {waveLoading && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'rgba(15,23,42,0.85)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 2,
-                color: '#fff',
-                fontSize: '1.3em',
-                borderRadius: '10px',
-              }}>
-                Cargando onda de audio...
-              </div>
-            )}
+          <div className="vsp-waveform-container">
+            <div id="timeline" className="vsp-timeline" />
             <div id="waveform" className="vsp-waveform" />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', marginBottom: '1em' }}>
