@@ -20,7 +20,9 @@ function VideoSegmentPlayer({ hideUpload }) {
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log("Archivo seleccionado:", file.name, "Tamaño:", file.size);
       const url = URL.createObjectURL(file);
+      console.log("URL creada:", url);
       setVideoUrl(url);
       setAudioUrl(url);
       setWaveLoading(true);
@@ -44,30 +46,61 @@ function VideoSegmentPlayer({ hideUpload }) {
   };
 
   useEffect(() => {
+    console.log("useEffect audioUrl triggered, audioUrl:", audioUrl);
+    console.log("wavesurferRef.current:", wavesurferRef.current);
+    
     if (audioUrl && !wavesurferRef.current) {
+      console.log("Iniciando creación de WaveSurfer...");
+      
+      // Verificar que el contenedor existe
+      const container = document.getElementById("waveform");
+      console.log("Contenedor waveform encontrado:", container);
+      
+      if (!container) {
+        console.error("No se encontró el contenedor #waveform");
+        return;
+      }
+
       const regionsPlugin = RegionsPlugin.create();
       const timelinePlugin = TimelinePlugin.create();
       
-      wavesurferRef.current = WaveSurfer.create({
-        container: "#waveform",
-        waveColor: "#ddd",
-        progressColor: "#2196f3",
-        height: 80,
-        responsive: true,
-        backend: "WebAudio",
-        plugins: [regionsPlugin, timelinePlugin],
-        timeline: {
-          container: "#timeline"
-        },
-        minPxPerSec: 100 * zoomLevel
-      });
+      console.log("Plugins creados:", { regionsPlugin, timelinePlugin });
+      
+      try {
+        wavesurferRef.current = WaveSurfer.create({
+          container: "#waveform",
+          waveColor: "#ddd",
+          progressColor: "#2196f3",
+          height: 80,
+          responsive: true,
+          backend: "WebAudio",
+          plugins: [regionsPlugin, timelinePlugin],
+          timeline: {
+            container: "#timeline"
+          },
+          minPxPerSec: 100 * zoomLevel
+        });
+        
+        console.log("WaveSurfer creado exitosamente:", wavesurferRef.current);
+      } catch (error) {
+        console.error("Error al crear WaveSurfer:", error);
+        return;
+      }
 
+      console.log("Cargando audio URL:", audioUrl);
       wavesurferRef.current.load(audioUrl);
       setWaveLoading(true);
 
       wavesurferRef.current.on('ready', () => {
+        console.log("WaveSurfer está listo!");
+        
+        // Verificar que el plugin de timeline esté disponible
+        console.log("Plugin timeline disponible:", timelinePlugin);
+        console.log("Plugins de WaveSurfer:", wavesurferRef.current.plugins);
+        
         // Verificar que el plugin de regiones esté disponible
         if (regionsPlugin) {
+          console.log("Agregando regiones...");
           regionsPlugin.clearRegions();
           segments.forEach((seg, idx) => {
             regionsPlugin.addRegion({
@@ -79,12 +112,23 @@ function VideoSegmentPlayer({ hideUpload }) {
               resize: false,
             });
           });
+          console.log("Regiones agregadas:", segments.length);
         }
         setWaveLoading(false);
       });
 
+      wavesurferRef.current.on('error', (error) => {
+        console.error("Error en WaveSurfer:", error);
+        setWaveLoading(false);
+      });
+
+      wavesurferRef.current.on('loading', (progress) => {
+        console.log("Cargando WaveSurfer:", progress * 100 + "%");
+      });
+
       // Evento cuando el usuario hace clic en una región
       regionsPlugin.on('region-clicked', (region, e) => {
+        console.log("Región clickeada:", region.id);
         e.stopPropagation();
         const segmentId = Number(region.id);
         const segment = segments.find(seg => seg.id === segmentId);
@@ -118,6 +162,7 @@ function VideoSegmentPlayer({ hideUpload }) {
 
     return () => {
       if (wavesurferRef.current) {
+        console.log("Destruyendo WaveSurfer...");
         wavesurferRef.current.destroy();
         wavesurferRef.current = null;
       }
@@ -164,6 +209,23 @@ function VideoSegmentPlayer({ hideUpload }) {
       wavesurferRef.current.zoom(100 * zoomLevel);
     }
   }, [zoomLevel]);
+
+  // Verificar que los contenedores del DOM estén disponibles
+  useEffect(() => {
+    console.log("Componente montado, verificando contenedores...");
+    const waveformContainer = document.getElementById("waveform");
+    const timelineContainer = document.getElementById("timeline");
+    
+    console.log("Contenedor waveform:", waveformContainer);
+    console.log("Contenedor timeline:", timelineContainer);
+    
+    if (!waveformContainer) {
+      console.warn("El contenedor #waveform no está disponible en el DOM");
+    }
+    if (!timelineContainer) {
+      console.warn("El contenedor #timeline no está disponible en el DOM");
+    }
+  }, []);
 
   const goToSegment = (start) => {
     if (videoRef.current && wavesurferRef.current) {
@@ -251,7 +313,7 @@ function VideoSegmentPlayer({ hideUpload }) {
               onMouseOver={e => e.currentTarget.style.background = '#7c3aed'}
               onMouseOut={e => e.currentTarget.style.background = 'rgba(30,41,59,0.7)'}
             >
-              <ZoomOutIcon fontSize="medium" />
+              -
             </button>
             <button
               onClick={() => setZoomLevel(z => Math.min(5, z + 0.25))}
@@ -274,7 +336,7 @@ function VideoSegmentPlayer({ hideUpload }) {
               onMouseOver={e => e.currentTarget.style.background = '#7c3aed'}
               onMouseOut={e => e.currentTarget.style.background = 'rgba(30,41,59,0.7)'}
             >
-              <ZoomInIcon fontSize="medium" />
+              +
             </button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', marginBottom: '1em' }}>
