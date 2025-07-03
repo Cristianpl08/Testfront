@@ -4,6 +4,8 @@ import segments from "./segments";
 import "./App.css";
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
 function VideoSegmentPlayer({ hideUpload }) {
   const videoRef = useRef(null);
@@ -13,6 +15,7 @@ function VideoSegmentPlayer({ hideUpload }) {
   const [currentSegmentIdx, setCurrentSegmentIdx] = useState(0);
   const [waveLoading, setWaveLoading] = useState(false);
   const [isUserSeeking, setIsUserSeeking] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
@@ -55,7 +58,8 @@ function VideoSegmentPlayer({ hideUpload }) {
         plugins: [regionsPlugin, timelinePlugin],
         timeline: {
           container: "#timeline"
-        }
+        },
+        minPxPerSec: 100 * zoomLevel
       });
 
       wavesurferRef.current.load(audioUrl);
@@ -153,6 +157,14 @@ function VideoSegmentPlayer({ hideUpload }) {
     }
   }, [currentSegmentIdx]);
 
+  // Actualizar el zoom dinámicamente
+  useEffect(() => {
+    if (wavesurferRef.current) {
+      wavesurferRef.current.options.minPxPerSec = 100 * zoomLevel;
+      wavesurferRef.current.zoom(100 * zoomLevel);
+    }
+  }, [zoomLevel]);
+
   const goToSegment = (start) => {
     if (videoRef.current && wavesurferRef.current) {
       setIsUserSeeking(true);
@@ -216,6 +228,54 @@ function VideoSegmentPlayer({ hideUpload }) {
           <div className="vsp-waveform-container">
             <div id="waveform" className="vsp-waveform" />
             <div id="timeline" className="vsp-timeline" />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', margin: '0.7em 0 0.2em 0' }}>
+            <button
+              onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.25))}
+              title="Zoom Out"
+              style={{
+                background: 'rgba(30,41,59,0.7)',
+                border: 'none',
+                borderRadius: '50%',
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                cursor: 'pointer',
+                color: '#fff',
+                transition: 'background 0.2s',
+                fontSize: 20
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#7c3aed'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(30,41,59,0.7)'}
+            >
+              <ZoomOutIcon fontSize="medium" />
+            </button>
+            <button
+              onClick={() => setZoomLevel(z => Math.min(5, z + 0.25))}
+              title="Zoom In"
+              style={{
+                background: 'rgba(30,41,59,0.7)',
+                border: 'none',
+                borderRadius: '50%',
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                cursor: 'pointer',
+                color: '#fff',
+                transition: 'background 0.2s',
+                fontSize: 20
+              }}
+              onMouseOver={e => e.currentTarget.style.background = '#7c3aed'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(30,41,59,0.7)'}
+            >
+              <ZoomInIcon fontSize="medium" />
+            </button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', marginBottom: '1em' }}>
             <button onClick={goToPrevSegment} disabled={currentSegmentIdx === 0} className="vsp-segment-btn">Anterior</button>
