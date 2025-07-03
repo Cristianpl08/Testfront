@@ -110,7 +110,7 @@ body, #root, .vsp-bg {
 
 .vsp-waveform-container {
   width: 100%;
-  max-width: 900px;
+  max-width: 1300px;
   background: #0f172a;
   border-radius: 14px;
   margin-bottom: 1.2rem;
@@ -124,11 +124,11 @@ body, #root, .vsp-bg {
   background: transparent !important;
   border: none !important;
   color: #e0e7ff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.5px;
   z-index: 2;
-  padding: 0 16px;
+  padding: 0 24px;
 }
 
 .vsp-waveform {
@@ -139,6 +139,8 @@ body, #root, .vsp-bg {
   box-shadow: none !important;
   width: 100%;
   max-width: 100%;
+  height: 0px;
+  min-height:0px;
   position: relative;
   z-index: 1;
 }
@@ -175,8 +177,8 @@ body, #root, .vsp-bg {
   transform: translateY(-2px) scale(1.06);
 }
 
-@media (max-width: 900px) {
-  .vsp-video, .vsp-waveform, .vsp-timeline {
+@media (max-width: 1300px) {
+  .vsp-waveform-container {
     max-width: 98vw;
   }
 }

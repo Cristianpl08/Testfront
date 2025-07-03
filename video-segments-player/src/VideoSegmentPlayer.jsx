@@ -214,8 +214,8 @@ function VideoSegmentPlayer({ hideUpload }) {
             controls
           />
           <div className="vsp-waveform-container">
-            <div id="timeline" className="vsp-timeline" />
             <div id="waveform" className="vsp-waveform" />
+            <div id="timeline" className="vsp-timeline" />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', marginBottom: '1em' }}>
             <button onClick={goToPrevSegment} disabled={currentSegmentIdx === 0} className="vsp-segment-btn">Anterior</button>
