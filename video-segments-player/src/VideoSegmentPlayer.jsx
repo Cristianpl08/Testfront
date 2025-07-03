@@ -4,8 +4,7 @@ import segments from "./segments";
 import "./App.css";
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+
 
 function VideoSegmentPlayer({ hideUpload }) {
   const videoRef = useRef(null);
