@@ -268,7 +268,7 @@ function VideoSegmentPlayer({ hideUpload }) {
           </div>
         </div>
       )}
-      {!hideUpload && (
+      {!hideUpload && !videoUrl && (
         <label className="vsp-upload-label">
           <input
             type="file"
@@ -293,7 +293,7 @@ function VideoSegmentPlayer({ hideUpload }) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', margin: '0.7em 0 0.2em 0' }}>
             <button
-              onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.25))}
+              onClick={() => setZoomLevel(z => Math.max(0.1, z - 0.25))}
               title="Zoom Out"
               style={{
                 background: 'rgba(30,41,59,0.7)',
