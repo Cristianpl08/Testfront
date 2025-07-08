@@ -10,7 +10,7 @@ function VideoSegmentPlayer({ hideUpload }) {
   const wavesurferRef = useRef(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
-  const [currentSegmentIdx, setCurrentSegmentIdx] = useState(0);
+  const [currentSegmentIdx, setCurrentSegmentIdx] = useState(-1);
   const [waveLoading, setWaveLoading] = useState(false);
   const [isUserSeeking, setIsUserSeeking] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -154,6 +154,15 @@ function VideoSegmentPlayer({ hideUpload }) {
         if (!isUserSeeking) {
           setIsUserSeeking(true);
           syncVideoToWaveform(progress);
+          // Obtener el tiempo actual del video después del seek
+          const video = videoRef.current;
+          let currentTime = 0;
+          if (video && video.duration) {
+            currentTime = progress * video.duration;
+          }
+          // Buscar el segmento correspondiente
+          const idx = segments.findIndex(seg => currentTime >= seg.start && currentTime <= seg.end);
+          setCurrentSegmentIdx(idx !== -1 ? idx : -1);
           setTimeout(() => setIsUserSeeking(false), 200);
         }
       });
@@ -164,6 +173,9 @@ function VideoSegmentPlayer({ hideUpload }) {
           const idx = segments.findIndex(seg => time >= seg.start && time <= seg.end);
           if (idx !== -1 && idx !== currentSegmentIdx) {
             setCurrentSegmentIdx(idx);
+          } else if (idx === -1 && currentSegmentIdx !== -1) {
+            // Si no estamos en ningún segmento, limpiar la selección
+            setCurrentSegmentIdx(-1);
           }
         }
       });
@@ -186,30 +198,35 @@ function VideoSegmentPlayer({ hideUpload }) {
     const handleTimeUpdate = () => {
       if (!isUserSeeking && video.duration) {
         syncWaveformToVideo();
+        // Buscar el segmento correspondiente al tiempo actual del video
+        const currentTime = video.currentTime;
+        const idx = segments.findIndex(seg => currentTime >= seg.start && currentTime <= seg.end);
+        setCurrentSegmentIdx(idx !== -1 ? idx : -1);
       }
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-  }, [isUserSeeking]);
+  }, [isUserSeeking, segments]);
 
   // Actualizar colores de regiones cuando cambia el segmento actual
   useEffect(() => {
     if (wavesurferRef.current) {
-      // En WaveSurfer v7, los plugins se acceden directamente
       const regionsPlugin = wavesurferRef.current.plugins.regions;
       if (regionsPlugin) {
-        segments.forEach((seg, idx) => {
-          const region = regionsPlugin.getRegions().find(r => r.id === String(seg.id));
-          if (region) {
-            region.update({ 
-              color: idx === currentSegmentIdx ? 'rgba(124,58,237,0.3)' : 'rgba(96,165,250,0.2)' 
-            });
-          }
+        // Obtener todas las regiones existentes
+        const allRegions = regionsPlugin.getRegions();
+        allRegions.forEach(region => {
+          // Buscar el índice del segmento correspondiente a esta región
+          const idx = segments.findIndex(seg => String(seg.id) === region.id);
+          // Actualizar el color según si es el segmento activo
+          region.update({
+            color: idx === currentSegmentIdx ? 'rgba(124,58,237,0.3)' : 'rgba(96,165,250,0.2)'
+          });
         });
       }
     }
-  }, [currentSegmentIdx]);
+  }, [currentSegmentIdx, segments]);
 
   // Actualizar el zoom dinámicamente
   useEffect(() => {
@@ -338,7 +355,7 @@ function VideoSegmentPlayer({ hideUpload }) {
                   Descripción:
                 </label>
                 <textarea
-                  value={segments[currentSegmentIdx]?.description || ''}
+                  value={currentSegmentIdx >= 0 ? segments[currentSegmentIdx]?.description || '' : ''}
                   readOnly
                   style={{
                     width: '100%',
@@ -372,7 +389,7 @@ function VideoSegmentPlayer({ hideUpload }) {
                 </label>
                 <input
                   type="text"
-                  value={segments[currentSegmentIdx]?.prosody || ''}
+                  value={currentSegmentIdx >= 0 ? segments[currentSegmentIdx]?.prosody || '' : ''}
                   readOnly
                   style={{
                     width: '100%',
@@ -404,7 +421,7 @@ function VideoSegmentPlayer({ hideUpload }) {
                 </label>
                 <input
                   type="text"
-                  value={segments[currentSegmentIdx]?.prosody2 || ''}
+                  value={currentSegmentIdx >= 0 ? segments[currentSegmentIdx]?.prosody2 || '' : ''}
                   readOnly
                   style={{
                     width: '100%',
@@ -475,8 +492,8 @@ function VideoSegmentPlayer({ hideUpload }) {
             </button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1em', marginBottom: '1em' }}>
-            <button onClick={goToPrevSegment} disabled={currentSegmentIdx === 0} className="vsp-segment-btn">Anterior</button>
-            <button onClick={goToNextSegment} disabled={currentSegmentIdx === segments.length - 1} className="vsp-segment-btn">Siguiente</button>
+            <button onClick={goToPrevSegment} disabled={currentSegmentIdx <= 0} className="vsp-segment-btn">Anterior</button>
+            <button onClick={goToNextSegment} disabled={currentSegmentIdx >= segments.length - 1} className="vsp-segment-btn">Siguiente</button>
           </div>
           <div className="vsp-segments">
             {segments.map((seg, idx) => (
