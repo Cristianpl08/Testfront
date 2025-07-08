@@ -107,22 +107,25 @@ function VideoSegmentPlayer({ hideUpload }) {
         console.log("Plugin timeline disponible:", timelinePlugin);
         console.log("Plugins de WaveSurfer:", wavesurferRef.current.plugins);
         
-        // Verificar que el plugin de regiones esté disponible
-        if (regionsPlugin) {
-          console.log("Agregando regiones...");
-          regionsPlugin.clearRegions();
-          segments.forEach((seg, idx) => {
-            regionsPlugin.addRegion({
-              id: String(seg.id),
-              start: seg.start,
-              end: seg.end,
-              color: idx === currentSegmentIdx ? 'rgba(124,58,237,0.3)' : 'rgba(96,165,250,0.2)',
-              drag: false,
-              resize: false,
+                  // Verificar que el plugin de regiones esté disponible
+          if (regionsPlugin) {
+            console.log("Agregando regiones...");
+            regionsPlugin.clearRegions();
+            segments.forEach((seg, idx) => {
+              // Convertir de milisegundos a segundos para WaveSurfer
+              const startInSeconds = seg.start / 1000;
+              const endInSeconds = seg.end / 1000;
+              regionsPlugin.addRegion({
+                id: String(seg.id),
+                start: startInSeconds,
+                end: endInSeconds,
+                color: idx === currentSegmentIdx ? 'rgba(124,58,237,0.3)' : 'rgba(96,165,250,0.2)',
+                drag: false,
+                resize: false,
+              });
             });
-          });
-          console.log("Regiones agregadas:", segments.length);
-        }
+            console.log("Regiones agregadas:", segments.length);
+          }
         setWaveLoading(false);
       });
 
@@ -143,7 +146,7 @@ function VideoSegmentPlayer({ hideUpload }) {
         const segment = segments.find(seg => seg.id === segmentId);
         if (segment) {
           setIsUserSeeking(true);
-          syncVideoToWaveform(segment.start / (videoRef.current?.duration || 1));
+          syncVideoToWaveform((segment.start / 1000) / (videoRef.current?.duration || 1));
           setCurrentSegmentIdx(segments.findIndex(seg => seg.id === segmentId));
           setTimeout(() => setIsUserSeeking(false), 200);
         }
@@ -160,8 +163,9 @@ function VideoSegmentPlayer({ hideUpload }) {
           if (video && video.duration) {
             currentTime = progress * video.duration;
           }
-          // Buscar el segmento correspondiente
-          const idx = segments.findIndex(seg => currentTime >= seg.start && currentTime <= seg.end);
+          // Buscar el segmento correspondiente (convertir a milisegundos para comparar)
+          const currentTimeMs = currentTime * 1000;
+          const idx = segments.findIndex(seg => currentTimeMs >= seg.start && currentTimeMs <= seg.end);
           setCurrentSegmentIdx(idx !== -1 ? idx : -1);
           setTimeout(() => setIsUserSeeking(false), 200);
         }
@@ -170,7 +174,9 @@ function VideoSegmentPlayer({ hideUpload }) {
       // Evento de proceso de audio para detectar segmentos
       wavesurferRef.current.on('audioprocess', (time) => {
         if (!isUserSeeking) {
-          const idx = segments.findIndex(seg => time >= seg.start && time <= seg.end);
+          // Convertir tiempo a milisegundos para comparar con los segmentos
+          const timeMs = time * 1000;
+          const idx = segments.findIndex(seg => timeMs >= seg.start && timeMs <= seg.end);
           if (idx !== -1 && idx !== currentSegmentIdx) {
             setCurrentSegmentIdx(idx);
           } else if (idx === -1 && currentSegmentIdx !== -1) {
@@ -200,7 +206,8 @@ function VideoSegmentPlayer({ hideUpload }) {
         syncWaveformToVideo();
         // Buscar el segmento correspondiente al tiempo actual del video
         const currentTime = video.currentTime;
-        const idx = segments.findIndex(seg => currentTime >= seg.start && currentTime <= seg.end);
+        const currentTimeMs = currentTime * 1000;
+        const idx = segments.findIndex(seg => currentTimeMs >= seg.start && currentTimeMs <= seg.end);
         setCurrentSegmentIdx(idx !== -1 ? idx : -1);
       }
     };
@@ -256,11 +263,13 @@ function VideoSegmentPlayer({ hideUpload }) {
   const goToSegment = (start) => {
     if (videoRef.current && wavesurferRef.current) {
       setIsUserSeeking(true);
-      videoRef.current.currentTime = start;
+      // Convertir de milisegundos a segundos para el video
+      const startInSeconds = start / 1000;
+      videoRef.current.currentTime = startInSeconds;
       videoRef.current.play();
       
       if (videoRef.current.duration) {
-        const progress = start / videoRef.current.duration;
+        const progress = startInSeconds / videoRef.current.duration;
         wavesurferRef.current.seekTo(progress);
       }
       
@@ -503,7 +512,7 @@ function VideoSegmentPlayer({ hideUpload }) {
                 className="vsp-segment-btn"
                 style={idx === currentSegmentIdx ? { border: '2px solid #7c3aed', background: 'linear-gradient(90deg, #7c3aed 60%, #60a5fa 100%)' } : {}}
               >
-                #{seg.id} ({seg.start.toFixed(1)}s - {seg.end.toFixed(1)}s)
+                #{seg.id} ({(seg.start/1000).toFixed(1)}s - {(seg.end/1000).toFixed(1)}s)
               </button>
             ))}
           </div>
