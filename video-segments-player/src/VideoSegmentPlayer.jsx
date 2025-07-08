@@ -299,12 +299,129 @@ function VideoSegmentPlayer({ hideUpload }) {
       {/* El resto del renderizado igual, pero usando 'segments' del estado */}
       {videoUrl && segments.length > 0 && (
         <div style={{ width: "100%" }}>
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            className="vsp-video"
-            controls
-          />
+          <div style={{ 
+            display: 'flex', 
+            gap: '2em', 
+            marginBottom: '1em',
+            alignItems: 'flex-start'
+          }}>
+            {/* Columna del video */}
+            <div style={{ flex: '1' }}>
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                className="vsp-video"
+                controls
+              />
+            </div>
+            
+            {/* Columna de campos de texto */}
+            <div style={{ 
+              flex: '1', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '1em',
+              minWidth: '300px'
+            }}>
+              <div style={{ 
+                background: 'rgba(30,41,59,0.1)', 
+                padding: '1em', 
+                borderRadius: '8px',
+                border: '1px solid rgba(30,41,59,0.2)'
+              }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5em', 
+                  fontWeight: 'bold',
+                  color: '#1e293b'
+                }}>
+                  Descripción:
+                </label>
+                <textarea
+                  value={segments[currentSegmentIdx]?.description || ''}
+                  readOnly
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '0.5em',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    background: '#fff',
+                    color: '#000'
+                  }}
+                  placeholder="Sin descripción disponible"
+                />
+              </div>
+              
+              <div style={{ 
+                background: 'rgba(30,41,59,0.1)', 
+                padding: '1em', 
+                borderRadius: '8px',
+                border: '1px solid rgba(30,41,59,0.2)'
+              }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5em', 
+                  fontWeight: 'bold',
+                  color: '#1e293b'
+                }}>
+                  Emoción Principal (Prosody):
+                </label>
+                <input
+                  type="text"
+                  value={segments[currentSegmentIdx]?.prosody || ''}
+                  readOnly
+                  style={{
+                    width: '100%',
+                    padding: '0.5em',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    background: '#fff',
+                    color: '#000'
+                  }}
+                  placeholder="Sin emoción principal"
+                />
+              </div>
+              
+              <div style={{ 
+                background: 'rgba(30,41,59,0.1)', 
+                padding: '1em', 
+                borderRadius: '8px',
+                border: '1px solid rgba(30,41,59,0.2)'
+              }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5em', 
+                  fontWeight: 'bold',
+                  color: '#1e293b'
+                }}>
+                  Emoción Secundaria (Prosody 2):
+                </label>
+                <input
+                  type="text"
+                  value={segments[currentSegmentIdx]?.prosody2 || ''}
+                  readOnly
+                  style={{
+                    width: '100%',
+                    padding: '0.5em',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    background: '#fff',
+                    color: '#000'
+                  }}
+                  placeholder="Sin emoción secundaria"
+                />
+              </div>
+            </div>
+          </div>
+          
           <div className="vsp-waveform-container">
             <div id="waveform" className="vsp-waveform" />
             <div id="timeline" className="vsp-timeline" />
