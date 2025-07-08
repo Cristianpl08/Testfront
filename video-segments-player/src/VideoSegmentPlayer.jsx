@@ -16,15 +16,72 @@ function VideoSegmentPlayer({ hideUpload }) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [segmentType, setSegmentType] = useState(null); // Nuevo estado para la selección
   const [segments, setSegments] = useState([]); // Estado para los segmentos
+  const [jsonFile, setJsonFile] = useState(null); // Estado para el archivo JSON subido
+  const [jsonValidation, setJsonValidation] = useState({ isValid: false, message: '' }); // Estado para validación
 
-  // Cargar dinámicamente el archivo de segmentos según la selección
+  // Función para validar el archivo JSON
+  const validateJsonFile = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const jsonData = JSON.parse(e.target.result);
+          
+          // Verificar que sea un array
+          if (!Array.isArray(jsonData)) {
+            resolve({ isValid: false, message: 'El archivo JSON debe contener un array de segmentos' });
+            return;
+          }
+          
+          // Verificar que cada elemento tenga los campos requeridos
+          for (let i = 0; i < jsonData.length; i++) {
+            const segment = jsonData[i];
+            if (!segment.hasOwnProperty('id') || !segment.hasOwnProperty('start') || !segment.hasOwnProperty('end')) {
+              resolve({ 
+                isValid: false, 
+                message: `El segmento ${i + 1} no contiene los campos requeridos (id, start, end)` 
+              });
+              return;
+            }
+          }
+          
+          resolve({ isValid: true, message: `Archivo válido con ${jsonData.length} segmentos` });
+        } catch (error) {
+          resolve({ isValid: false, message: 'Error al parsear el archivo JSON: ' + error.message });
+        }
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  // Función para manejar la carga del archivo JSON
+  const handleJsonUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setJsonFile(file);
+      const validation = await validateJsonFile(file);
+      setJsonValidation(validation);
+      
+      if (validation.isValid) {
+        // Cargar los segmentos del archivo JSON
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const jsonData = JSON.parse(e.target.result);
+          setSegments(jsonData);
+        };
+        reader.readAsText(file);
+      }
+    }
+  };
+
+  // Cargar dinámicamente el archivo de segmentos según la selección (solo si no hay archivo JSON cargado)
   useEffect(() => {
-    if (segmentType === "with-scenes") {
+    if (!jsonFile && segmentType === "with-scenes") {
       import("./segments-with-scenes.js").then(mod => setSegments(mod.default));
-    } else if (segmentType === "without-scenes") {
+    } else if (!jsonFile && segmentType === "without-scenes") {
       import("./segments-without-scenes.js").then(mod => setSegments(mod.default));
     }
-  }, [segmentType]);
+  }, [segmentType, jsonFile]);
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
@@ -303,24 +360,97 @@ function VideoSegmentPlayer({ hideUpload }) {
           </div>
         </div>
       )}
-      {/* Selección de tipo de segmentación antes de subir el video */}
-      {!segmentType && !videoUrl && (
+      {/* Input de archivo JSON al inicio */}
+      {!jsonFile && !videoUrl && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1em', margin: '2em 0' }}>
+          <h3 style={{ margin: '0', color: '#1e293b' }}>Paso 1: Subir archivo JSON de segmentos</h3>
+          <label className="vsp-upload-label">
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleJsonUpload}
+              className="vsp-upload-input"
+            />
+            Seleccionar archivo JSON de segmentos
+          </label>
+          {jsonValidation.message && (
+            <div style={{ 
+              color: jsonValidation.isValid ? 'green' : 'red', 
+              marginTop: '1em',
+              padding: '0.5em',
+              borderRadius: '4px',
+              background: jsonValidation.isValid ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${jsonValidation.isValid ? '#22c55e' : '#ef4444'}`
+            }}>
+              {jsonValidation.message}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Selección de tipo de segmentación (solo si no hay archivo JSON) */}
+      {!jsonFile && !segmentType && !videoUrl && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1em', margin: '2em 0' }}>
+          <h3 style={{ margin: '0', color: '#1e293b' }}>O seleccionar tipo de segmentación predefinida</h3>
           <button onClick={() => setSegmentType("with-scenes")} className="vsp-segment-btn">Segmentación con escenas</button>
           <button onClick={() => setSegmentType("without-scenes")} className="vsp-segment-btn">Segmentación sin escenas</button>
         </div>
       )}
-      {/* Input de video solo si ya se eligió el tipo de segmentación */}
-      {!hideUpload && !videoUrl && segmentType && (
-        <label className="vsp-upload-label">
-          <input
-            type="file"
-            accept="video/*"
-            onChange={handleVideoUpload}
-            className="vsp-upload-input"
-          />
-          Seleccionar video
-        </label>
+
+      {/* Input de video */}
+      {!hideUpload && !videoUrl && (segmentType || jsonFile) && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1em', margin: '2em 0' }}>
+          <h3 style={{ margin: '0', color: '#1e293b' }}>Paso 2: Seleccionar video</h3>
+          <label className="vsp-upload-label">
+            <input
+              type="file"
+              accept="video/*"
+              onChange={handleVideoUpload}
+              className="vsp-upload-input"
+            />
+            Seleccionar video
+          </label>
+        </div>
+      )}
+
+      {/* Mostrar información del archivo JSON cargado */}
+      {jsonFile && (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: '0.5em', 
+          margin: '1em 0',
+          padding: '1em',
+          background: 'rgba(34, 197, 94, 0.1)',
+          borderRadius: '8px',
+          border: '1px solid #22c55e'
+        }}>
+          <div style={{ color: 'green', fontWeight: 'bold' }}>
+            ✓ Archivo JSON cargado: {jsonFile.name}
+          </div>
+          <div style={{ color: '#1e293b', fontSize: '0.9em' }}>
+            {segments.length} segmentos disponibles
+          </div>
+          <button 
+            onClick={() => {
+              setJsonFile(null);
+              setSegments([]);
+              setJsonValidation({ isValid: false, message: '' });
+            }}
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid #ef4444',
+              color: '#ef4444',
+              padding: '0.5em 1em',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.8em'
+            }}
+          >
+            Cambiar archivo JSON
+          </button>
+        </div>
       )}
       {/* El resto del renderizado igual, pero usando 'segments' del estado */}
       {videoUrl && segments.length > 0 && (
