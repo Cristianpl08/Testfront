@@ -1,10 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import WaveSurfer from "wavesurfer.js";
-import segments from "./segments";
+// import segments from "./segments"; // Eliminar esta línea, ahora será dinámico
 import "./App.css";
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
-
 
 function VideoSegmentPlayer({ hideUpload }) {
   const videoRef = useRef(null);
@@ -15,6 +14,17 @@ function VideoSegmentPlayer({ hideUpload }) {
   const [waveLoading, setWaveLoading] = useState(false);
   const [isUserSeeking, setIsUserSeeking] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [segmentType, setSegmentType] = useState(null); // Nuevo estado para la selección
+  const [segments, setSegments] = useState([]); // Estado para los segmentos
+
+  // Cargar dinámicamente el archivo de segmentos según la selección
+  useEffect(() => {
+    if (segmentType === "with-scenes") {
+      import("./segments-with-scenes.js").then(mod => setSegments(mod.default));
+    } else if (segmentType === "without-scenes") {
+      import("./segments-without-scenes.js").then(mod => setSegments(mod.default));
+    }
+  }, [segmentType]);
 
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
@@ -267,7 +277,15 @@ function VideoSegmentPlayer({ hideUpload }) {
           </div>
         </div>
       )}
-      {!hideUpload && !videoUrl && (
+      {/* Selección de tipo de segmentación antes de subir el video */}
+      {!segmentType && !videoUrl && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1em', margin: '2em 0' }}>
+          <button onClick={() => setSegmentType("with-scenes")} className="vsp-segment-btn">Segmentación con escenas</button>
+          <button onClick={() => setSegmentType("without-scenes")} className="vsp-segment-btn">Segmentación sin escenas</button>
+        </div>
+      )}
+      {/* Input de video solo si ya se eligió el tipo de segmentación */}
+      {!hideUpload && !videoUrl && segmentType && (
         <label className="vsp-upload-label">
           <input
             type="file"
@@ -278,7 +296,8 @@ function VideoSegmentPlayer({ hideUpload }) {
           Seleccionar video
         </label>
       )}
-      {videoUrl && (
+      {/* El resto del renderizado igual, pero usando 'segments' del estado */}
+      {videoUrl && segments.length > 0 && (
         <div style={{ width: "100%" }}>
           <video
             ref={videoRef}
