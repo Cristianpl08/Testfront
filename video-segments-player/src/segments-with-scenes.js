@@ -156,9 +156,9 @@ export default [
     "start": 212985,
     "end": 215185,
     "duration": 2200,
-    "description":"",
-    "prosody":"",
-    "prosody2":""
+    "description":"Rueda en pavimento húmedo.",
+    "prosody":"Confianza 30%",
+    "prosody2":"Admiración"
   },
   {
     "id": 17,
